@@ -24,6 +24,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
@@ -62,7 +63,8 @@ import static org.omnirom.omnijaws.LocationBrowseActivity.DATA_LOCATION_NAME;
 public class SettingsFragment extends PreferenceFragmentCompat implements OnPreferenceChangeListener,
         OmniJawsClient.OmniJawsObserver, OnCheckedChangeListener {
 
-    private static final String DEFAULT_WEATHER_ICON_PACKAGE = "org.omnirom.omnijaws.google_new";
+    private static final String CHRONUS_ICON_PACK_INTENT = "com.dvtonder.chronus.ICON_PACK";
+    private static final String DEFAULT_WEATHER_ICON_PACKAGE = "org.omnirom.omnijaws.google_new_light";
 
     private SharedPreferences mPrefs;
     private ListPreference mProvider;
@@ -164,8 +166,12 @@ public class SettingsFragment extends PreferenceFragmentCompat implements OnPref
 
         if (mShowIconPack) {
             String settingHeaderPackage = Config.getIconPack(getContext());
-            List<WeatherIconPackInfo> packs = getAvailableWeatherIconPacks();
-            applyWeatherIconPackPreference(packs);
+            List<String> entries = new ArrayList<String>();
+            List<String> values = new ArrayList<String>();
+            getAvailableWeatherIconPacks(entries, values);
+            mWeatherIconPack.setEntries(entries.toArray(new String[entries.size()]));
+            mWeatherIconPack.setEntryValues(values.toArray(new String[values.size()]));
+
             int valueIndex = mWeatherIconPack.findIndexOfValue(settingHeaderPackage);
             if (valueIndex == -1) {
                 // no longer found
@@ -355,21 +361,38 @@ public class SettingsFragment extends PreferenceFragmentCompat implements OnPref
         WeatherUpdateService.scheduleUpdatePeriodic(getContext());
     }
 
-    private List<WeatherIconPackInfo> getAvailableWeatherIconPacks() {
-        return WeatherIconPackManager.load(getContext());
-    }
-
-    private void applyWeatherIconPackPreference(List<WeatherIconPackInfo> packs) {
-        List<String> entries = new ArrayList<>();
-        List<String> values = new ArrayList<>();
-
-        for (WeatherIconPackInfo pack : packs) {
-            entries.add(pack.label);
-            values.add(pack.value);
+    private void getAvailableWeatherIconPacks(List<String> entries, List<String> values) {
+        Intent i = new Intent();
+        PackageManager packageManager = getContext().getPackageManager();
+        i.setAction("org.omnirom.WeatherIconPack");
+        for (ResolveInfo r : packageManager.queryIntentActivities(i, 0)) {
+            String packageName = r.activityInfo.packageName;
+            if (packageName.equals(DEFAULT_WEATHER_ICON_PACKAGE)) {
+                values.add(0, r.activityInfo.name);
+            } else {
+                values.add(r.activityInfo.name);
+            }
+            String label = r.activityInfo.loadLabel(packageManager).toString();
+            if (label == null) {
+                label = r.activityInfo.packageName;
+            }
+            if (packageName.equals(DEFAULT_WEATHER_ICON_PACKAGE)) {
+                entries.add(0, label);
+            } else {
+                entries.add(label);
+            }
         }
-
-        mWeatherIconPack.setEntries(entries.toArray(new String[0]));
-        mWeatherIconPack.setEntryValues(values.toArray(new String[0]));
+        i = new Intent(Intent.ACTION_MAIN);
+        i.addCategory(CHRONUS_ICON_PACK_INTENT);
+        for (ResolveInfo r : packageManager.queryIntentActivities(i, 0)) {
+            String packageName = r.activityInfo.packageName;
+            values.add(packageName + ".weather");
+            String label = r.activityInfo.loadLabel(packageManager).toString();
+            if (label == null) {
+                label = r.activityInfo.packageName;
+            }
+            entries.add(label);
+        }
     }
 
     @Override
