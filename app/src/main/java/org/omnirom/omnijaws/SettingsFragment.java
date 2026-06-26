@@ -26,7 +26,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Bundle;
-import android.os.Handler;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.widget.CompoundButton;
@@ -61,7 +60,7 @@ import static org.omnirom.omnijaws.LocationBrowseActivity.DATA_LOCATION_LON;
 import static org.omnirom.omnijaws.LocationBrowseActivity.DATA_LOCATION_NAME;
 
 public class SettingsFragment extends PreferenceFragmentCompat implements OnPreferenceChangeListener,
-        OmniJawsClient.OmniJawsObserver, OnCheckedChangeListener {
+        OnCheckedChangeListener {
 
     private static final String CHRONUS_ICON_PACK_INTENT = "com.dvtonder.chronus.ICON_PACK";
     private static final String DEFAULT_WEATHER_ICON_PACKAGE = Config.DEFAULT_ICON_PACK;
@@ -75,7 +74,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements OnPref
     private ListPreference mUpdateInterval;
     private ListPreference mWeatherIconPack;
     private Preference mUpdateStatus;
-    private Handler mHandler = new Handler();
     protected boolean mShowIconPack = true;
     private EditTextPreference mOwmKey;
     private Preference mCustomLocationActivity;
@@ -200,7 +198,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements OnPref
     @Override
     public void onResume() {
         super.onResume();
-        OmniJawsClient.get().addObserver(getContext(), this);
         // values can be changed from outside
         getPreferenceScreen().removeAll();
         doLoadPreferences();
@@ -209,12 +206,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements OnPref
             mTriggerPermissionCheck = false;
         }
         queryAndUpdateWeather();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        OmniJawsClient.get().removeObserver(getContext(), this);
     }
 
     @Override
@@ -354,7 +345,6 @@ public class SettingsFragment extends PreferenceFragmentCompat implements OnPref
         // stop any pending
         WeatherUpdateService.cancelAllUpdate(getContext());
         WeatherAppWidgetProvider.disableAllWidgets(getContext());
-        WeatherUpdateService.disabledCall(getContext());
     }
 
     private void enableService() {
@@ -394,51 +384,25 @@ public class SettingsFragment extends PreferenceFragmentCompat implements OnPref
         }
     }
 
-    @Override
-    public void weatherUpdated() {
-        queryAndUpdateWeather();
-    }
-
-    @Override
-    public void weatherError(int errorReason) {
-        String errorString = null;
-        if (errorReason == OmniJawsClient.EXTRA_ERROR_DISABLED) {
-            errorString = getResources().getString(R.string.omnijaws_service_disabled);
-        } else if (errorReason == OmniJawsClient.EXTRA_ERROR_LOCATION) {
-            errorString = getResources().getString(R.string.omnijaws_service_error_location);
-        } else if (errorReason == OmniJawsClient.EXTRA_ERROR_NETWORK) {
-            errorString = getResources().getString(R.string.omnijaws_service_error_network);
-        } else {
-            errorString = getResources().getString(R.string.omnijaws_service_error_long);
-        }
-        if (errorString != null) {
-            final String s = errorString;
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (mUpdateStatus != null) {
-                        mUpdateStatus.setSummary(s);
-                    }
-                }
-            });
-        }
-    }
-
     private void queryAndUpdateWeather() {
-        OmniJawsClient.get().queryWeather(getContext());
-        if (OmniJawsClient.get().getWeatherInfo() != null) {
-            getActivity().runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    if (mUpdateStatus != null) {
-                        mUpdateStatus.setSummary(OmniJawsClient.get().getWeatherInfo().getLastUpdateTime());
-                    }
-                }
-            });
+        OmniJawsClient client = OmniJawsClient.get();
+        client.queryWeather(getContext());
+        OmniJawsClient.WeatherInfo info = client.getWeatherInfo();
+        if (mUpdateStatus == null) {
+            return;
         }
+        if (info != null) {
+            mUpdateStatus.setSummary(info.getLastUpdateTime());
+            return;
+        }
+        int errorResId = client.isOmniJawsEnabled(getContext())
+                ? R.string.omnijaws_service_error_long
+                : R.string.omnijaws_service_disabled;
+        mUpdateStatus.setSummary(getResources().getString(errorResId));
     }
 
     private void forceRefreshWeatherSettings() {
         WeatherUpdateService.scheduleUpdateNow(getContext());
+        queryAndUpdateWeather();
     }
 }

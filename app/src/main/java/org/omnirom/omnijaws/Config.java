@@ -171,7 +171,11 @@ public class Config {
         SharedPreferences prefs = PreferenceManager
                 .getDefaultSharedPreferences(context);
 
-        return prefs.edit().putBoolean(PREF_KEY_ENABLE, value).commit();
+        boolean committed = prefs.edit().putBoolean(PREF_KEY_ENABLE, value).commit();
+        if (committed) {
+            WeatherContentProvider.notifySettingsChanged(context);
+        }
+        return committed;
     }
 
     public static int getUpdateInterval(Context context) {

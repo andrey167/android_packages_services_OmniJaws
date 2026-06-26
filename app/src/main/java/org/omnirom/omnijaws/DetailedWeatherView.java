@@ -219,26 +219,6 @@ public class DetailedWeatherView extends FrameLayout {
         mWeatherLine.setVisibility(View.GONE);
     }
 
-    public void weatherError(int errorReason) {
-        if (DEBUG) Log.d(TAG, "weatherError " + errorReason);
-        mProgressContainer.setVisibility(View.GONE);
-        setErrorView();
-
-        if (errorReason == OmniJawsClient.EXTRA_ERROR_DISABLED) {
-            mEmptyViewImage.setImageResource(R.drawable.ic_qs_weather_default_off);
-            mStatusMsg.setText(getResources().getString(R.string.omnijaws_service_disabled));
-        } else if (errorReason == OmniJawsClient.EXTRA_ERROR_LOCATION) {
-            mEmptyViewImage.setImageResource(R.drawable.ic_qs_weather_default_on);
-            mStatusMsg.setText(getResources().getString(R.string.omnijaws_service_error_location));
-        } else if (errorReason == OmniJawsClient.EXTRA_ERROR_NETWORK) {
-            mEmptyViewImage.setImageResource(R.drawable.ic_qs_weather_default_on);
-            mStatusMsg.setText(getResources().getString(R.string.omnijaws_service_error_network));
-        } else {
-            mEmptyViewImage.setImageResource(R.drawable.ic_qs_weather_default_on);
-            mStatusMsg.setText(getResources().getString(R.string.omnijaws_service_error_long));
-        }
-    }
-
     public void startProgress() {
         mEmptyView.setVisibility(View.GONE);
         mWeatherLine.setVisibility(View.GONE);

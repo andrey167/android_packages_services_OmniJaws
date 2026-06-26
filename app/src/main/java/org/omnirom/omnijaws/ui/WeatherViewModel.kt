@@ -32,7 +32,6 @@ import org.omnirom.omnijaws.icon.IconProvider
 data class WeatherUiState(
     val weatherInfo: OmniJawsClient.WeatherInfo? = null,
     val isLoading: Boolean = true,
-    val error: Int? = null,
     val iconPack: String = "",
     val iconTheme: Int = IconProvider.ICON_THEME_DEFAULT
 )
@@ -67,14 +66,9 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
         _uiState.value = WeatherUiState(
             weatherInfo = info,
             isLoading = false,
-            error = if (info == null) OmniJawsClient.EXTRA_ERROR_DISABLED else null,
             iconPack = Config.getIconPack(context) ?: "",
             iconTheme = Config.getIconTheme(context)
         )
-    }
-
-    fun onWeatherError(errorReason: Int) {
-        _uiState.value = _uiState.value.copy(error = errorReason, isLoading = false)
     }
 
     fun forceRefresh() {
@@ -86,6 +80,7 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
             Uri.parse("content://org.omnirom.omnijaws.provider/control"),
             values, null, null
         )
+        queryWeather()
     }
 
     fun getConditionIcon(conditionCode: Int): Drawable? {

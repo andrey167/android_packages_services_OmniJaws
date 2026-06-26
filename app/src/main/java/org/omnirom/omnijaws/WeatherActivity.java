@@ -20,16 +20,13 @@ package org.omnirom.omnijaws;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 
 import com.android.internal.util.android.OmniJawsClient;
 
 import java.util.Calendar;
 
-public class WeatherActivity extends BaseActivity implements OmniJawsClient.OmniJawsObserver {
-    private static final String TAG = "WeatherActivity";
-    private static final boolean DEBUG = false;
+public class WeatherActivity extends BaseActivity {
     private DetailedWeatherView mDetailedView;
 
     /** The background colors of the app, it changes thru out the day to mimic the sky. **/
@@ -55,6 +52,7 @@ public class WeatherActivity extends BaseActivity implements OmniJawsClient.Omni
         View refresh = findViewById(R.id.refresh);
         refresh.setOnClickListener(v -> {
             mDetailedView.forceRefresh();
+            queryAndUpdateWeather();
         });
         mDetailedView.setActivity(this);
         updateHourColor();
@@ -69,26 +67,7 @@ public class WeatherActivity extends BaseActivity implements OmniJawsClient.Omni
     @Override
     public void onResume() {
         super.onResume();
-         OmniJawsClient.get().addObserver(this, this);
-         queryAndUpdateWeather();
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        OmniJawsClient.get().removeObserver(this, this);
-    }
-
-    @Override
-    public void weatherUpdated() {
-        if (DEBUG) Log.d(TAG, "weatherUpdated");
         queryAndUpdateWeather();
-    }
-
-    @Override
-    public void weatherError(int errorReason) {
-        if (DEBUG) Log.d(TAG, "weatherError " + errorReason);
-        mDetailedView.weatherError(errorReason);
     }
 
     private void queryAndUpdateWeather() {

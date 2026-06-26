@@ -25,7 +25,6 @@ import android.app.job.JobScheduler;
 import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
@@ -48,13 +47,6 @@ import java.util.function.Consumer;
 public class WeatherUpdateService extends JobService {
     private static final String TAG = "WeatherUpdateService";
     private static final boolean DEBUG = false;
-    private static final String ACTION_BROADCAST = "org.omnirom.omnijaws.WEATHER_UPDATE";
-    private static final String ACTION_ERROR = "org.omnirom.omnijaws.WEATHER_ERROR";
-
-    private static final String EXTRA_ERROR = "error";
-
-    private static final int EXTRA_ERROR_LOCATION = 1;
-    private static final int EXTRA_ERROR_DISABLED = 2;
 
     private static final float LOCATION_ACCURACY_THRESHOLD_METERS = 50000;
     private static final long OUTDATED_LOCATION_THRESHOLD_MILLIS = 10L * 60L * 1000L; // 10 minutes
@@ -111,9 +103,6 @@ public class WeatherUpdateService extends JobService {
         try {
             if (!Config.isEnabled(this)) {
                 Log.w(TAG, "Service started, but not enabled ... stopping");
-                Intent errorIntent = new Intent(ACTION_ERROR);
-                errorIntent.putExtra(EXTRA_ERROR, EXTRA_ERROR_DISABLED);
-                sendBroadcast(errorIntent);
                 return;
             }
 
@@ -171,9 +160,6 @@ public class WeatherUpdateService extends JobService {
                             WeatherUpdateService.scheduleUpdateNow(WeatherUpdateService.this);
                         } else {
                             Log.w(TAG, "Failed to retrieve location");
-                            Intent errorIntent = new Intent(ACTION_ERROR);
-                            errorIntent.putExtra(EXTRA_ERROR, EXTRA_ERROR_LOCATION);
-                            sendBroadcast(errorIntent);
                             Config.setUpdateError(WeatherUpdateService.this, true);
                         }
                     }
@@ -243,12 +229,6 @@ public class WeatherUpdateService extends JobService {
         jobScheduler.cancelAll();
     }
 
-    public static void disabledCall(Context context) {
-        Intent errorIntent = new Intent(ACTION_ERROR);
-        errorIntent.putExtra(EXTRA_ERROR, EXTRA_ERROR_DISABLED);
-        context.sendBroadcast(errorIntent);
-    }
-
     private void updateWeather() {
         mHandler.post(new Runnable() {
             @Override
@@ -310,9 +290,6 @@ public class WeatherUpdateService extends JobService {
                         WeatherContentProvider.updateCachedWeatherInfo(WeatherUpdateService.this);
                         WeatherAppWidgetProvider.updateAllWidgets(WeatherUpdateService.this);
                     }
-                    // send broadcast that something has changed
-                    Intent updateIntent = new Intent(ACTION_BROADCAST);
-                    sendBroadcast(updateIntent);
                 }
             }
         });

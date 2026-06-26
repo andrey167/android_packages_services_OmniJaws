@@ -32,7 +32,8 @@ public class SystemReceiver extends BroadcastReceiver {
         if (!Config.isEnabled(context)) return;
         final String action = intent.getAction();
         if (Intent.ACTION_BOOT_COMPLETED.equals(action)) {
-            if (DEBUG) Log.d(TAG, "boot completed kick alarm");
+            if (DEBUG) Log.d(TAG, "boot completed");
+            WeatherContentProvider.updateCachedWeatherInfo(context);
             WeatherUpdateService.scheduleUpdatePeriodic(context);
             WeatherUpdateService.scheduleUpdateNow(context);
         } else if (FORCE_UPDATE.equals(action)) {

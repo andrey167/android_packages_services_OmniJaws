@@ -108,7 +108,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         } else {
             WeatherUpdateService.cancelAllUpdate(ctx)
             WeatherAppWidgetProvider.disableAllWidgets(ctx)
-            WeatherUpdateService.disabledCall(ctx)
         }
     }
 
@@ -173,10 +172,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun onPermissionResult(granted: Boolean) {
         _uiState.value = _uiState.value.copy(hasLocationPermission = granted)
         if (granted) scheduleUpdate()
-    }
-
-    fun refreshUpdateStatus() {
-        _uiState.value = _uiState.value.copy(lastUpdateTime = queryLastUpdate())
     }
 
     private fun scheduleUpdate() {
